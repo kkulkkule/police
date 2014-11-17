@@ -73,14 +73,27 @@ HPolice.HookPoliceSay = function(sender, text, teamChat)
 				end
 				
 				if target != NULL and reason != "" then
-					local filename = HPolice.ReplaceSteamID("polices/" .. os.date("%Y%m%d%H%M%S", os.time()) .. "_" .. sender:SteamID() .. ".txt")
-					file.Write(filename, 
-						"신고자: " .. sender:Nick() .. "(" .. sender:SteamID() .. ")\r\n" ..
-						"신고 사유: " .. reason .. "\r\n" ..
-						"신고 대상자: " .. (isentity(target) and target:Nick() .. "(" .. target:SteamID() .. ")" or target) .."\r\n" ..
-						"신고 시각: " .. os.date("%Y/%m/%d %H:%M:%S", os.time())
-					)
-					HPolice.CheckIfSuccess(filename, sender)
+					string.Replace(string.Replace(reason, "{", ""), "}", "")
+					if string.len(reason) <= 110 then
+						local filename = HPolice.ReplaceSteamID("polices/" .. os.date("%Y%m%d%H%M%S", os.time()) .. "_" .. sender:SteamID() .. ".txt")
+						
+						local policer = HPolice.ReplaceSpaceChar(sender:Nick())
+						if isentity(target) and target:IsPlayer() then
+							target = target:Nick() .. "(" .. target:SteamID() .. ")"
+						end
+						
+						HPolice.ReplaceSpaceChar(target)
+						
+						file.Write(filename, 
+							"신고자: " .. sender:Nick() .. "(" .. sender:SteamID() .. ")\r\n" ..
+							"신고 사유: " .. reason .. "\r\n" ..
+							"신고 대상자: " .. target .."\r\n" ..
+							"신고 시각: " .. os.date("%Y/%m/%d %H:%M:%S", os.time())
+						)
+						HPolice.CheckIfSuccess(filename, sender)
+					else
+						PrintMessage(HUD_PRINTTALK, "신고 사유는 영어 110자, 한글 55자(110 byte) 이내로 적어주세요.")
+					end
 				elseif reason == "" then
 					sender:PrintMessage(HUD_PRINTTALK, "신고 사유를 제대로 적어주세요.")
 				end
