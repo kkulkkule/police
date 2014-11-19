@@ -79,17 +79,25 @@ HPolice.HookPoliceSay = function(sender, text, teamChat)
 						
 						local policer = HPolice.ReplaceSpaceChar(sender:Nick())
 						if isentity(target) and target:IsPlayer() then
-							target = target:Nick() .. "(" .. target:SteamID() .. ")"
+							sid = target:SteamID()
+							-- target = string.Replace(string.Replace(HPolice.ReplaceSpaceChar(target:Nick()), " ", ""), "\t", "") .. "(" .. sid .. ")"
+							target = target:Nick() .. "(" .. sid .. ")"
 						end
 						
 						HPolice.ReplaceSpaceChar(target)
 						
-						file.Write(filename, 
-							"신고자: " .. sender:Nick() .. "(" .. sender:SteamID() .. ")\r\n" ..
-							"신고 사유: " .. reason .. "\r\n" ..
-							"신고 대상자: " .. target .."\r\n" ..
-							"신고 시각: " .. os.date("%Y/%m/%d %H:%M:%S", os.time())
-						)
+						-- file.Write(filename, 
+							-- "신고자: " .. sender:Nick() .. "(" .. sender:SteamID() .. ")\r\n" ..
+							-- "신고 사유: " .. reason .. "\r\n" ..
+							-- "신고 대상자: " .. target .."\r\n" ..
+							-- "신고 시각: " .. os.date("%Y/%m/%d %H:%M:%S", os.time())
+						-- )
+						local f = file.Open(filename, "w", "DATA")
+						f:Write("신고자: " .. sender:Nick() .. "(" .. sender:SteamID() .. ")\n")
+						f:Write("신고 사유: " .. reason .. "\n")
+						f:Write("신고 대상자: " .. target .. "\n")
+						f:Write("신고 시각: " .. os.date("%Y/%m/%d %H:%M:%S", os.time()))
+						f:Close()
 						HPolice.CheckIfSuccess(filename, sender)
 					else
 						PrintMessage(HUD_PRINTTALK, "신고 사유는 영어 110자, 한글 55자(110 byte) 이내로 적어주세요.")
@@ -163,7 +171,7 @@ hook.Add("PlayerSay", "HookPoliceSay", HPolice.HookPoliceSay)
 
 HPolice.CheckIfSuccess = function(filename, sender, delay)
 	if !delay then
-		delay = 1.0
+		delay = 0.5
 	end
 	
 	sender:PrintMessage(HUD_PRINTTALK, "신고 접수중입니다...")
