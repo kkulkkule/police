@@ -152,15 +152,17 @@ HPolice.HookPoliceSay = function(sender, text, teamChat)
 							target = v
 						end
 						if processed then
-							sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target .. ", 처리됨")
+							sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target)
+							sender:PrintMessage(HUD_PRINTTALK, "\t\t\t처리됨")
 							file.Delete("polices/" .. v)
 						else
 							local reason = ""
 							for v in string.gfind(data, "신고 사유: ([^\r]+)\r\n") do
 								reason = v
 							end
-							sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target .. ", 처리 안 됨")
+							sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target)
 							sender:PrintMessage(HUD_PRINTTALK, "\t\t\t사유: " .. reason)
+							sender:PrintMessage(HUD_PRINTTALK, "\t\t\t처리 안 됨")
 						end
 					end
 				// 어드민일 경우 모두의 신고 현황 출력
@@ -168,11 +170,16 @@ HPolice.HookPoliceSay = function(sender, text, teamChat)
 					local data = file.Read("polices/" .. v)
 					local processed = string.find(data, "processed")
 					local target = ""
-					for v in string.gfind(data, "신고 대상자: ([^\r]+)\r\n") do
+					local id = ""
+					for v in string.gfind(data, "신고 대상자: ([^\n]+)\n") do
 						target = v
 					end
+					for v in string.gfind(data, "ID: ([^\n]+)\n?") do
+						id = v
+					end
 					if processed then
-						sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target .. ", 처리됨")
+						sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target)
+						sender:PrintMessage(HUD_PRINTTALK, "\t\t\t처리됨")
 						if string.find(v, HPolice.ReplaceSteamID(sender:SteamID())) then
 							file.Delete("polices/" .. v)
 						end
@@ -181,8 +188,10 @@ HPolice.HookPoliceSay = function(sender, text, teamChat)
 						for v in string.gfind(data, "신고 사유: ([^\r]+)\r\n") do
 							reason = v
 						end
-						sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target .. ", 처리 안 됨")
+						sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target)
 						sender:PrintMessage(HUD_PRINTTALK, "\t\t\t사유: " .. reason)
+						sender:PrintMessage(HUD_PRINTTALK, "\t\t\tID: " .. id)
+						sender:PrintMessage(HUD_PRINTTALK, "\t\t\t처리 안 됨")
 					end
 				end
 			end
