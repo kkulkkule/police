@@ -1,6 +1,9 @@
 MsgC(Color(0, 255, 0), "Initialize Police Module...\n")
 include("shared.lua")
 
+POLICE_URL = "http://kkulkkule.dyndns.info:8282/hlds/admin/police"
+GAME_NAME = "zs"
+
 // 굳이 주석을 안 달아도 다 아는 초기화 부분
 HPolice.Init = function()
 	-- util.AddNetworkString("HPoliceAlert")
@@ -34,97 +37,64 @@ HPolice.HookPoliceSay = function(sender, text, teamChat)
 				return ""
 			else
 				// 스팀 아이디 형식일 경우 처리
-				if string.find(string.upper(exploded[2]), "STEAM_%d:%d:%d+$") then
-					local steamid = exploded[2]
-					for _, v in pairs(player.GetAll()) do
-						if string.upper(v:SteamID()) == string.upper(steamid) then
-							target = v
-							break
-						end
-					end
+				-- if string.find(string.upper(exploded[2]), "STEAM_%d:%d:%d+$") then
+					-- local steamid = exploded[2]
+					-- for _, v in pairs(player.GetAll()) do
+						-- if string.upper(v:SteamID()) == string.upper(steamid) then
+							-- target = v
+							-- break
+						-- end
+					-- end
 					
-					if target == NULL then
-						target = steamid
-					end
+					-- if target == NULL then
+						-- target = steamid
+					-- end
 					
-					local reasonTable = {}
-					for i = 3, table.Count(exploded) do
-						table.insert(reasonTable, exploded[i])
-					end
-					reason = table.concat(reasonTable, " ")
-				// 닉네임 형식일 경우 처리
-				else
-					local targets = {}
-					for _, v in pairs(player.GetAll()) do
-						if string.find(string.lower(v:Nick()), string.lower(exploded[2])) then
-							table.insert(targets, v)
+					-- local reasonTable = {}
+					-- for i = 3, table.Count(exploded) do
+						-- table.insert(reasonTable, exploded[i])
+					-- end
+					-- reason = table.concat(reasonTable, " ")
+				-- // 닉네임 형식일 경우 처리
+				-- else
+					-- local targets = {}
+					-- for _, v in pairs(player.GetAll()) do
+						-- if string.find(string.lower(v:Nick()), string.lower(exploded[2])) then
+							-- table.insert(targets, v)
+						-- end
+					-- end
+					-- // 예외처리
+					-- if table.Count(targets) > 1 then
+						-- sender:PrintMessage(HUD_PRINTTALK, "해당 문자열을 포함한 닉네임의 유저가 두 명 이상입니다.")
+						-- sender:PrintMessage(HUD_PRINTTALK, "고유번호를 통해 신고해주세요.")
+						-- sender:PrintMessage(HUD_PRINTTALK, "고유번호는 !고번 혹은 !고유번호라고 치면 출력됩니다.")
+					-- elseif table.Count(targets) <= 0 then
+						-- sender:PrintMessage(HUD_PRINTTALK, "해당 문자열을 포함한 닉네임의 유저가 없습니다.")
+						-- sender:PrintMessage(HUD_PRINTTALK, "고유번호를 통해 신고해주세요.")
+						-- sender:PrintMessage(HUD_PRINTTALK, "고유번호는 !고번 혹은 !고유번호라고 치면 출력됩니다.")
+					-- // 플레이어 추출에 성공할 경우 사유를 보기 좋게 가공
+					-- else
+						-- target = targets[1]
+						-- local reasonTable = {}
+						-- for i = 3, table.Count(exploded) do
+							-- table.insert(reasonTable, exploded[i])
+						-- end
+						-- reason = table.concat(reasonTable, " ")
+					-- end
+				local reason = ""
+				if exploded[3] then
+					for i, v in pairs(exploded) do
+						if i < 3 then
+							continue
 						end
-					end
-					// 예외처리
-					if table.Count(targets) > 1 then
-						sender:PrintMessage(HUD_PRINTTALK, "해당 문자열을 포함한 닉네임의 유저가 두 명 이상입니다.")
-						sender:PrintMessage(HUD_PRINTTALK, "고유번호를 통해 신고해주세요.")
-						sender:PrintMessage(HUD_PRINTTALK, "고유번호는 !고번 혹은 !고유번호라고 치면 출력됩니다.")
-					elseif table.Count(targets) <= 0 then
-						sender:PrintMessage(HUD_PRINTTALK, "해당 문자열을 포함한 닉네임의 유저가 없습니다.")
-						sender:PrintMessage(HUD_PRINTTALK, "고유번호를 통해 신고해주세요.")
-						sender:PrintMessage(HUD_PRINTTALK, "고유번호는 !고번 혹은 !고유번호라고 치면 출력됩니다.")
-					// 플레이어 추출에 성공할 경우 사유를 보기 좋게 가공
-					else
-						target = targets[1]
-						local reasonTable = {}
-						for i = 3, table.Count(exploded) do
-							table.insert(reasonTable, exploded[i])
-						end
-						reason = table.concat(reasonTable, " ")
+						reason = reason .. " " .. v
 					end
 				end
-				
-				// 신고 대상이 확실하고 사유도 있을 경우 처리
-				if target != NULL and reason != "" then
-					string.Replace(string.Replace(reason, "{", ""), "}", "")
-					// 봇 신고 방지
-					if target:SteamID() == "BOT" then
-						sender:PrintMessage(HUD_PRINTTALK, target:Nick() .. "은(는) 플레이어가 아닌 봇이므로 신고할 수 없습니다.")
-						return
-					end
-					// 신고 접수
-					if string.len(reason) <= 110 then // 사유 짤림 방지
-						local filename = HPolice.ReplaceSteamID("polices/" .. os.date("%Y%m%d%H%M%S", os.time()) .. "_" .. sender:SteamID() .. ".txt")
-						
-						local policer = HPolice.ReplaceSpaceChar(sender:Nick())
-						
-						// 신고 대상이 문자열이 아닐 경우 SID 추출
-						if isentity(target) and target:IsPlayer() then
-							sid = target:SteamID()
-							-- target = string.Replace(string.Replace(HPolice.ReplaceSpaceChar(target:Nick()), " ", ""), "\t", "") .. "(" .. sid .. ")"
-							target = target:Nick() .. "(" .. sid .. ")"
-						end
-						
-						HPolice.ReplaceSpaceChar(target)
-						
-						-- file.Write(filename, 
-							-- "신고자: " .. sender:Nick() .. "(" .. sender:SteamID() .. ")\r\n" ..
-							-- "신고 사유: " .. reason .. "\r\n" ..
-							-- "신고 대상자: " .. target .."\r\n" ..
-							-- "신고 시각: " .. os.date("%Y/%m/%d %H:%M:%S", os.time())
-						-- )
-						local f = file.Open(filename, "w", "DATA")
-						f:Write("신고자: " .. sender:Nick() .. "(" .. sender:SteamID() .. ")\n")
-						f:Write("신고 사유: " .. reason .. "\n")
-						f:Write("신고 대상자: " .. target .. "\n")
-						f:Write("신고 시각: " .. os.date("%Y/%m/%d %H:%M:%S", os.time()) .. "\n")
-						f:Write("ID: " .. tostring(0x100000000 + tonumber(string.Replace(tostring(os.clock()), ".", ""))))
-						f:Close()
-						
-						// 성공적으로 접수됐는지 알림
-						HPolice.CheckIfSuccess(filename, sender, target, reason)
-					else
-						PrintMessage(HUD_PRINTTALK, "신고 사유는 영어 110자, 한글 55자(110 byte) 이내로 적어주세요.")
-					end
-				elseif reason == "" then
-					sender:PrintMessage(HUD_PRINTTALK, "신고 사유를 제대로 적어주세요.")
-				end
+				http.Post(POLICE_URL, {game = GAME_NAME, action = "receive", reporter = sender:SteamID(), reported = exploded[2], reason = reason}, function(body, len, headers, status) 
+					sender:PrintMessage(HUD_PRINTTALK, "신고 접수됨.")
+				end, function(body, len, headers, status)
+					sender:PrintMessage(HUD_PRINTTALK, "신고 서버가 꺼져 있어 신고를 접수할 수 없습니다. 어드민에게 문의하세요.")
+				end)
 				return ""
 			end
 		// 고유번호 출력
@@ -135,66 +105,22 @@ HPolice.HookPoliceSay = function(sender, text, teamChat)
 			return ""
 		// 처리 현황 보기
 		elseif exploded[1] == "!신고처리" or exploded[1] == "!처리현황" or exploded[1] == "!신고현황" then
-			local allFiles = file.Find("polices/*.txt", "DATA")
-			local listFiles = {}
-			for i, v in pairs(allFiles) do
-				// 어드민이 아닐 경우 자신의 신고 현황만 출력
-				if !sender:IsAdmin() then
-					if string.find(string.upper(v), HPolice.ReplaceSteamID(sender:SteamID())) then
-						table.insert(listFiles, v)
-					end
-					
-					for _, v in pairs(listFiles) do
-						local data = file.Read("polices/" .. v)
-						local processed = string.find(data, "processed")
-						local target = ""
-						for v in string.gfind(data, "신고 대상자: ([^\r]+)\r\n") do
-							target = v
-						end
-						if processed then
-							sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target)
-							sender:PrintMessage(HUD_PRINTTALK, "\t\t\t처리됨")
-							file.Delete("polices/" .. v)
-						else
-							local reason = ""
-							for v in string.gfind(data, "신고 사유: ([^\r]+)\r\n") do
-								reason = v
-							end
-							sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target)
-							sender:PrintMessage(HUD_PRINTTALK, "\t\t\t사유: " .. reason)
-							sender:PrintMessage(HUD_PRINTTALK, "\t\t\t처리 안 됨")
-						end
-					end
-				// 어드민일 경우 모두의 신고 현황 출력
-				else
-					local data = file.Read("polices/" .. v)
-					local processed = string.find(data, "processed")
-					local target = ""
-					local id = ""
-					for v in string.gfind(data, "신고 대상자: ([^\n]+)\n") do
-						target = v
-					end
-					for v in string.gfind(data, "ID: ([^\n]+)\n?") do
-						id = v
-					end
-					if processed then
-						sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target)
-						sender:PrintMessage(HUD_PRINTTALK, "\t\t\t처리됨")
-						if string.find(v, HPolice.ReplaceSteamID(sender:SteamID())) then
-							file.Delete("polices/" .. v)
-						end
-					else
-						local reason = ""
-						for v in string.gfind(data, "신고 사유: ([^\r]+)\r\n") do
-							reason = v
-						end
-						sender:PrintMessage(HUD_PRINTTALK, tostring(i) .. "\t\t신고 대상: " .. target)
-						sender:PrintMessage(HUD_PRINTTALK, "\t\t\t사유: " .. reason)
-						sender:PrintMessage(HUD_PRINTTALK, "\t\t\tID: " .. id)
-						sender:PrintMessage(HUD_PRINTTALK, "\t\t\t처리 안 됨")
-					end
+			http.Post(POLICE_URL, {game = GAME_NAME, action = "viewPolices", isAdmin = tostring(sender:IsAdmin()), requester = sender:SteamID()}, function(body, len, headers, status)
+				local eachPolices = string.Explode("\n\n", body)
+				if #eachPolices > 0 then
+					sender:PrintMessage(HUD_PRINTTALK, "//////////////////////////////////////////")
+					sender:PrintMessage(HUD_PRINTTALK, "//////////////////////////////////////////")
 				end
-			end
+				for _, v in pairs(eachPolices) do
+					local eachLines = string.Explode("\n", v)
+					for _, w in pairs(eachLines) do
+						sender:PrintMessage(HUD_PRINTTALK, w)
+					end
+					sender:PrintMessage(HUD_PRINTTALK, "//////////////////////////////////////////")
+				end
+			end, function()
+				sender:PrintMessage(HUD_PRINTTALK, "신고할 수 없습니다. 어드민에게 문의하세요.")
+			end)
 		elseif (exploded[1] == "!신고기각" or exploded[1] == "!신고각하") and (sender == NULL or sender:IsAdmin()) then
 			if sender:IsPlayer() then
 				sender:ConCommand("hpolice_cancel " .. exploded[2])
@@ -232,7 +158,9 @@ end
 HPolice.CancelPolice = function(pl, cmd, args, fulltext)
 	if pl == NULL or pl:IsAdmin() or pl:IsSuperAdmin() then
 		local id = tostring(args[1])
-		
+		string.Replace(id, "\r", "")
+		string.Replace(id, "\n", "")
+		string.Replace(id, " ", "")
 		if string.match(id, "^%d+$") == nil then
 			if pl:IsPlayer() then
 				pl:PrintMessage(HUD_PRINTTALK, "ID는 숫자로만 구성돼야 합니다.")
