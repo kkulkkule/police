@@ -171,21 +171,10 @@ HPolice.CancelPolice = function(pl, cmd, args, fulltext)
 			end
 		end
 		
-		local policeFile = HPolice.MatchedPoliceFile(id)
-		if policeFile then
-			file.Delete("polices/" .. policeFile)
-			if pl:IsPlayer() then
-				pl:PrintMessage(HUD_PRINTTALK, "신고 파일 [" .. policeFile .. "], 제거됨.")
-			else
-				MsgC(Color(0, 255, 0), "File was deleted. [" .. policeFile .. "]")
-			end
-			return true
-		end
-		if pl:IsPlayer() then
-			pl:PrintMessage(HUD_PRINTTALK, "해당 ID와 매치되는 신고 파일을 찾을 수 없음.")
-		else
-			MsgC(Color(255, 0, 0), "Couldn't find matched file.\n")
-		end
+		http.Post(POLICE_URL, {game = GAME_NAME, action = "cancelPolice", id = tostring(id)}, function(body, len, headers, status)
+			pl:PrintMessage(HUD_PRINTTALK, "신고번호 " .. tostring(id) .. ", 성공적으로 제거됨.")
+			ulx.logString("신고 번호 " .. tostring(id) .. ", 성공적으로 제거됨.")
+		end)
 		return false
 	end
 end
